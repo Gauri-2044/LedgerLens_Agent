@@ -8,3 +8,4 @@ app = FastAPI(title="LedgerLense AI Agent",
 def check_health():
     return 200, {'message':"OKK Running Perfectly Fine !!"}
 
+#no app.run it uses ASGI (Asynchronous Server Gateway Interface) 
