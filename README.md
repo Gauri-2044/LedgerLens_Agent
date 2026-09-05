@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="Artifacts/logo.png" alt="LedgerLens AI Logo" width="300" />
+  <img src="Artifacts/logo_readme.jpg" alt="LedgerLens AI Logo" width="300" />
 
   # 🔍 LedgerLens AI
   **Autonomous 4-Way Financial Reconciliation Engine Powered by Gemini 2.5 Flash & Cryptographic Audit Trails**
