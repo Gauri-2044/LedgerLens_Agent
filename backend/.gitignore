@@ -1,0 +1,23 @@
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# Python Virtual Environments
+my_venv/
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Vercel Deployment Artifacts
+.vercel/
+
+# Logs
+*.log

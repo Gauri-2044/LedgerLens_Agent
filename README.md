@@ -15,13 +15,13 @@
 
   ---
 
-  [🎥 Demo Video](Artifacts/demo_video.mp4) • [🌐 Live Application](https://ledgerlens-ai.vercel.app) • [📄 Pitch Deck](Artifacts/pitch_deck.pdf) • [📫 Postman Collection](Artifacts/postman_collection.json) • [🏗️ Full Architecture](ARCHITECTURE.md)
+  [🎥 Demo Video](https://drive.google.com/file/d/1KqTmbaVe58fn_qIBmL-ErjvdC2OEWQCw/view?usp=sharing) • [🌐 Live Application](https://ledger-lens-frontend.vercel.app/) • [📄 Pitch Deck](Artifacts/pitch_deck.pdf) • [📫 Postman Collection](Artifacts/postman_collection.json) • [🏗️ Full Architecture](ARCHITECTURE.md)
 
 </div>
 
 ---
 
-## 5. Impact Metrics
+##  Impact Metrics
 
 <div align="center">
 
@@ -33,7 +33,7 @@
 
 ---
 
-## 6. Problem
+## Problem
 
 Financial reconciliation across enterprise systems (ERP, POS, Gateways, Procurement) is fundamentally broken:
 
@@ -44,7 +44,7 @@ Financial reconciliation across enterprise systems (ERP, POS, Gateways, Procurem
 
 ---
 
-## 7. Solution
+## Solution
 
 **LedgerLens AI** bridges deterministic rules with autonomous agentic intelligence:
 
@@ -56,7 +56,7 @@ Financial reconciliation across enterprise systems (ERP, POS, Gateways, Procurem
 
 ---
 
-## 8. Why LedgerLens?
+## Why LedgerLens?
 
 | Feature | Legacy Regex / Excel | Standalone LLM Wrappers | 🔍 LedgerLens AI |
 | :--- | :---: | :---: | :---: |
@@ -69,7 +69,7 @@ Financial reconciliation across enterprise systems (ERP, POS, Gateways, Procurem
 
 ---
 
-## 9. Working
+## Working
 
 ```
  ┌────────────────┐
@@ -127,7 +127,7 @@ LedgerLens AI employs a modular 10-stage processing pipeline spanning the React 
 
 ---
 
-## 11. MCP / Agent Architecture
+## MCP / Agent Architecture
 
 The AI Agent in [`app/services/ai_investigator.py`](file:///c:/Users/HP/Desktop/Projects/RazorpayBuildathon/backend/app/services/ai_investigator.py) uses **Gemini 2.5 Flash** with function calling. It is equipped with 5 tools: `search_vendor`, `search_po`, `search_payment`, `calculate_variance`, and `compare_records`.
 
@@ -135,7 +135,7 @@ The AI Agent in [`app/services/ai_investigator.py`](file:///c:/Users/HP/Desktop/
 
 ---
 
-## 12. Reconciliation Logic
+## Reconciliation Logic
 
 Reconciliation operates across 3 confidence tiers ($c \ge 0.90$ $\rightarrow$ `MATCHED`, $0.50 \le c < 0.90$ $\rightarrow$ `NEEDS_REVIEW`, $c < 0.50$ $\rightarrow$ `UNRESOLVED`) using a multi-attribute weighted score ($w_v S_{\text{vendor}} + w_a S_{\text{amount}} + w_d S_{\text{date}} + w_r S_{\text{ref}}$).
 
@@ -143,7 +143,7 @@ Reconciliation operates across 3 confidence tiers ($c \ge 0.90$ $\rightarrow$ `M
 
 ---
 
-## 13. Edge Cases & Resilience
+## Edge Cases & Resilience
 
 | Edge Case Scenario | Engine Handling Mechanism |
 | :--- | :--- |
@@ -155,7 +155,7 @@ Reconciliation operates across 3 confidence tiers ($c \ge 0.90$ $\rightarrow$ `M
 
 ---
 
-## 14. Proof of Work
+## Proof of Work
 
 Tested on benchmark transaction datasets:
 
@@ -178,7 +178,7 @@ tests/test_reconciliation.py :: test_audit_hash_chaining PASSED
 
 ---
 
-## 15. Screenshots
+<!-- ## Screenshots
 
 <div align="center">
 
@@ -196,9 +196,9 @@ tests/test_reconciliation.py :: test_audit_hash_chaining PASSED
 
 </div>
 
----
+--- -->
 
-## 16. Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: React 18, Vite
@@ -217,7 +217,7 @@ tests/test_reconciliation.py :: test_audit_hash_chaining PASSED
 
 ---
 
-## 17. Project Structure
+## Project Structure
 
 LedgerLens AI is structured into a React TypeScript frontend and a FastAPI backend.
 
@@ -235,7 +235,7 @@ RazorpayBuildathon/
 
 ---
 
-## 18. Local Setup
+## Local Setup
 
 ### 1. Backend Setup
 
@@ -279,7 +279,7 @@ Open [http://localhost:1357](http://localhost:1357) in your browser.
 
 ---
 
-## 19. Environment Variables
+## Environment Variables
 
 Create a `.env` file in the `backend/` directory:
 
@@ -305,7 +305,7 @@ DATABASE_URL=postgresql+psycopg://ledgerlens:ledgerlens@localhost:5432/ledgerlen
 
 ---
 
-## 20. API / Workflow
+## API / Workflow
 
 ### Core Endpoints
 
@@ -321,7 +321,7 @@ DATABASE_URL=postgresql+psycopg://ledgerlens:ledgerlens@localhost:5432/ledgerlen
 
 ---
 
-## 21. Testing
+## Testing
 
 Run automated tests to verify deterministic matching, candidate generation, and validator rules:
 
@@ -332,7 +332,7 @@ pytest -v
 
 ---
 
-## 22. Security & Guardrails
+## Security & Guardrails
 
 1. **Anti-Hallucination Guardrail**: The AI agent cannot directly write status changes to the database. All agent outputs are re-verified by [`validator.py`](file:///c:/Users/HP/Desktop/Projects/RazorpayBuildathon/backend/app/services/validator.py).
 2. **Cryptographic Audit Hashing**: Each action produces a SHA-256 hash containing `previous_hash`, `timestamp`, `case_id`, and `event_type` to guarantee immutability.
@@ -341,7 +341,7 @@ pytest -v
 
 ---
 
-## 23. Limitations / Phase 2
+##  Limitations / Phase 2
 
 - **PDF / OCR Ingestion**: Currently supports CSV files; Phase 2 will introduce Tesseract OCR & Vision LLMs to extract line items directly from PDF invoices.
 - **Database Persistence**: Currently uses high-performance in-memory state; Phase 2 will enable full PostgreSQL persistence with Alembic migrations.
@@ -349,7 +349,7 @@ pytest -v
 
 ---
 
-## 24. Roadmap
+## Roadmap
 
 ```
   Q3 2026 (Current)         Q4 2026                   Q1 2027
@@ -363,12 +363,12 @@ pytest -v
 
 ---
 
-## 25. Team
+##  Team
 
 Built with ❤️ for **Razorpay Buildathon**:
 
-* **Team Name**: LedgerLens AI Team
-* **Members**:
+* **Team Name**: LedgerLens AI Team - GAURI BHASME
+* **Member**:
   * Lead AI & Backend Architect
   * Full Stack Developer & UI Designer
 

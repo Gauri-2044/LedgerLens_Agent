@@ -17,7 +17,7 @@ import type {
 } from '../types';
 
 // ─── Base Config ─────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL ?? 'https://ledger-lens-puce.vercel.app/';
 
 // ─── Response Wrapper ────────────────────────────────────────
 export interface ApiResponse<T> {

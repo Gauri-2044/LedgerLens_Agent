@@ -45,7 +45,8 @@ class Settings:
     VITE_URL:       str           = os.getenv("VITE_URL", "http://localhost:1357")
     CORS_ORIGINS:   list[str]     = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:1357,http://localhost:5173"
+        "http://localhost:1357,http://localhost:5173",
+        "https://ledger-lens-frontend.vercel.app/"
     ).split(",")
 
     # ------------------------------------------------------------------
