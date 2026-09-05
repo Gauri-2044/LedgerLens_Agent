@@ -1,0 +1,17 @@
+{
+  "name": "LedgerLens Demo Finance Policy",
+  "amount_tolerance_inr": 5,
+  "date_tolerance_days": 2,
+  "auto_match_requirements": [
+    "vendor identity confirmed",
+    "amount variance within tolerance",
+    "supporting PO exists"
+  ],
+  "review_triggers": [
+    "duplicate invoice",
+    "missing payment",
+    "missing receipt",
+    "amount variance above tolerance",
+    "multiple candidate matches"
+  ]
+}
