@@ -22,10 +22,10 @@ reconcile_route = APIRouter(prefix="/reconcile", tags=["reconcile"])
 
 @reconcile_route.post("/run")
 async def run_reconciliation(
-    purchase_orders_file: UploadFile = File(...),
-    invoices_file:        UploadFile = File(...),
-    payments_file:        UploadFile = File(...),
-    receipts_file:        UploadFile = File(...),
+    purchase_orders_file: UploadFile | None = File(None),
+    invoices_file:        UploadFile | None = File(None),
+    payments_file:        UploadFile | None = File(None),
+    receipts_file:        UploadFile | None = File(None),
 ):
     """
     Stages 1-4: Ingest, parse, normalise, deterministic match + XAI.
@@ -58,10 +58,10 @@ async def run_reconciliation(
 
 @reconcile_route.post("/investigate")
 async def run_full_investigation(
-    purchase_orders_file: UploadFile = File(...),
-    invoices_file:        UploadFile = File(...),
-    payments_file:        UploadFile = File(...),
-    receipts_file:        UploadFile = File(...),
+    purchase_orders_file: UploadFile | None = File(None),
+    invoices_file:        UploadFile | None = File(None),
+    payments_file:        UploadFile | None = File(None),
+    receipts_file:        UploadFile | None = File(None),
 ):
     """
     Full 10-module reconciliation pipeline:

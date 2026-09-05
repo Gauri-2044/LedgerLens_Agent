@@ -48,7 +48,7 @@ COLUMN_ALIASES: dict[str, dict[str, str]] = {
         "date": "po_date", "order_date": "po_date",
     },
     "invoices": {
-        "invoice_no": "invoice_id", "inv_id": "invoice_id",
+        "invoice_no": "invoice_id", "inv_id": "invoice_id", "bill_id": "invoice_id",
         "supplier": "vendor_name", "vendor": "vendor_name",
         "amount": "invoice_amount", "total": "invoice_amount", "inv_amount": "invoice_amount",
         "date": "invoice_date", "inv_date": "invoice_date",
@@ -60,10 +60,10 @@ COLUMN_ALIASES: dict[str, dict[str, str]] = {
         "date": "payment_date", "txn_date": "payment_date", "paid_date": "payment_date",
     },
     "receipts": {
-        "receipt_no": "receipt_id", "rec_id": "receipt_id",
+        "receipt_no": "receipt_id", "rec_id": "receipt_id", "grn_id": "receipt_id",
         "supplier": "vendor_name", "vendor": "vendor_name",
-        "amount": "receipt_amount", "total": "receipt_amount", "rec_amount": "receipt_amount",
-        "date": "receipt_date", "rec_date": "receipt_date",
+        "received_amount": "receipt_amount", "amount": "receipt_amount", "total": "receipt_amount", "rec_amount": "receipt_amount",
+        "date": "receipt_date", "rec_date": "receipt_date", "receipt_dt": "receipt_date",
     },
 }
 
@@ -74,6 +74,15 @@ DOC_ID_COL: dict[str, str] = {
     "payments":        "payment_id",
     "receipts":        "receipt_id",
 }
+
+# Default sample files if no file is uploaded
+DEFAULT_DATA_PATHS: dict[str, str] = {
+    "purchase_orders": "../data/purchase_orders.csv",
+    "invoices":        "../data/invoices.csv",
+    "payments":        "../data/payments.csv",
+    "receipts":        "../data/receipts.csv",
+}
+
 AMOUNT_COL: dict[str, str] = {
     "purchase_orders": "po_amount",
     "invoices":        "invoice_amount",
@@ -92,17 +101,36 @@ DATE_COL: dict[str, str] = {
 # Stage 1 - INGESTION
 # ---------------------------------------------------------------------------
 
-async def ingest_file(file: UploadFile, doc_type: str) -> pd.DataFrame:
+async def ingest_file(file: UploadFile | str | None, doc_type: str) -> pd.DataFrame:
     """
     INGESTION STAGE
     ---------------
-    1. Validate file extension (.csv only).
-    2. Read raw bytes; enforce 10 MB file-size limit.
-    3. Parse bytes into a pandas DataFrame.
-
-    Returns a raw DataFrame (no normalisation yet).
-    Raises HTTPException on any validation failure.
+    Supports UploadFile stream, file path string, or default dataset fallback.
     """
+    import os
+
+    # If no file provided or string path provided, load from disk
+    if file is None or isinstance(file, str):
+        path = file if isinstance(file, str) else DEFAULT_DATA_PATHS.get(doc_type, "")
+        if not os.path.exists(path):
+            # Try absolute path from workspace root
+            alt_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", f"{doc_type}.csv")
+            if os.path.exists(alt_path):
+                path = alt_path
+
+        if not os.path.exists(path):
+            raise HTTPException(
+                status_code=400,
+                detail=f"No upload provided and default dataset '{path}' not found for {doc_type}.",
+            )
+        try:
+            return pd.read_csv(path)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Could not read default CSV '{path}': {exc}",
+            )
+
     filename = file.filename or ""
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
@@ -176,6 +204,13 @@ def parse_dataframe(df: pd.DataFrame, doc_type: str) -> pd.DataFrame:
 
     alias_map = COLUMN_ALIASES.get(doc_type, {})
     df.rename(columns=alias_map, inplace=True)
+
+    # Fallback for vendor_name if missing in CSV headers (e.g. receipts.csv)
+    if "vendor_name" not in df.columns:
+        if "vendor_id" in df.columns:
+            df["vendor_name"] = df["vendor_id"]
+        else:
+            df["vendor_name"] = "Unknown Vendor"
 
     required = REQUIRED_COLUMNS[doc_type]
     missing = [col for col in required if col not in df.columns]

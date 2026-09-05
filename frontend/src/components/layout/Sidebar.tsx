@@ -32,7 +32,7 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { label: 'Overview',        icon: <LayoutDashboard size={18} />, to: '/' },
+  { label: 'Overview',        icon: <LayoutDashboard size={18} />, to: '/dashboard' },
   { label: 'Reconciliation',  icon: <ArrowLeftRight  size={18} />, to: '/reconciliation' },
   { label: 'Investigations',  icon: <Search          size={18} />, to: '/investigation/RC-1042' },
   { label: 'Exceptions',      icon: <AlertTriangle   size={18} />, to: '/exceptions' },
@@ -63,8 +63,8 @@ function NavGroup({
     <div className="flex flex-col gap-0.5">
       {items.map(item => {
         const isActive =
-          item.to === '/'
-            ? location.pathname === '/'
+          item.to === '/dashboard'
+            ? location.pathname === '/dashboard'
             : location.pathname.startsWith(item.to.replace('/RC-1042', ''));
         return (
           <NavLink
@@ -97,28 +97,23 @@ function SidebarContent({
       {/* Logo */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-200 shrink-0">
         {!collapsed && (
-          <div className="flex items-center gap-2.5">
+          <NavLink to="/" className="flex items-center gap-2.5 group">
             {/* Logo Mark */}
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M4 4 L12 4 L12 12 L4 12 Z" fill="white" opacity="0.9" />
-                <circle cx="17" cy="17" r="4" fill="white" opacity="0.7" />
-                <path d="M4 14 L4 20 L10 20" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
-              </svg>
+            <div className="w-9 h-9 rounded-lg bg-white p-1 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden border border-slate-200 shrink-0">
+              <img src="/logo.jpg" alt="LedgerLens Logo" className="w-full h-full object-contain rounded-md" />
             </div>
             <div>
-              <div className="font-bold text-slate-900 text-sm leading-tight">LedgerLens</div>
-              <div className="text-[10px] font-semibold text-primary-600 uppercase tracking-widest leading-tight">AI</div>
+              <div className="font-bold text-slate-900 text-sm leading-tight flex items-center gap-1">
+                LedgerLens
+              </div>
+              <div className="text-[10px] font-semibold text-purple-600 uppercase tracking-widest leading-tight">AI 2.5</div>
             </div>
-          </div>
+          </NavLink>
         )}
         {collapsed && (
-          <div className="mx-auto w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M4 4 L12 4 L12 12 L4 12 Z" fill="white" opacity="0.9" />
-              <circle cx="17" cy="17" r="4" fill="white" opacity="0.7" />
-            </svg>
-          </div>
+          <NavLink to="/" className="mx-auto w-9 h-9 rounded-lg bg-white p-1 flex items-center justify-center shadow-sm overflow-hidden border border-slate-200 shrink-0">
+            <img src="/logo.jpg" alt="LedgerLens Logo" className="w-full h-full object-contain rounded-md" />
+          </NavLink>
         )}
         <button
           onClick={onToggle}

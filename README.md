@@ -2,7 +2,7 @@
 
   <img src="Artifacts/logo_readme.jpg" alt="LedgerLens AI Logo" width="300" />
 
-  # 🔍 LedgerLens AI
+  ## LedgerLens AI
   **Autonomous 4-Way Financial Reconciliation Engine Powered by Gemini 2.5 Flash & Cryptographic Audit Trails**
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

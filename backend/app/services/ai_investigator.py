@@ -455,18 +455,10 @@ async def investigate_case(
     try:
         genai.configure(api_key=api_key)
 
-        # Register tool declarations as Gemini function declarations
-        tools = [genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(**decl)
-                for decl in _TOOL_DECLARATIONS
-            ]
-        )]
-
         model = genai.GenerativeModel(
             model_name=GEMINI_MODEL,
             system_instruction=_SYSTEM_PROMPT,
-            tools=tools,
+            tools=_TOOL_DECLARATIONS,
         )
 
         chat = model.start_chat()

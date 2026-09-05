@@ -1,8 +1,4 @@
 """
-app/helpers/fuzzy_candidates.py
-================================
-Stage 6 — Fuzzy Candidate Generation
-
 When deterministic matching fails (AMBIGUOUS / UNMATCHED), this module
 uses RapidFuzz to find the most likely candidate POs/Payments for a
 given Invoice by scoring across four signals:

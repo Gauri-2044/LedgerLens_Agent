@@ -58,6 +58,10 @@ export function ExceptionTypeBadge({ type }: ExceptionTypeBadgeProps) {
     DUPLICATE_INVOICE:   'Duplicate Invoice',
     MISSING_PO:          'Missing PO',
     MULTIPLE_CANDIDATES: 'Multiple Candidates',
+    DUPLICATE_LINK:      'Duplicate Link',
+    MISSING_RECEIPT:     'Missing Receipt',
+    DATE_GAP:            'Date Gap',
+    INSUFFICIENT_EVIDENCE: 'Insufficient Evidence',
   };
   return (
     <span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-medium">
