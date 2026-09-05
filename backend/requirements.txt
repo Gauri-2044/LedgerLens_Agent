@@ -3,8 +3,9 @@ uvicorn
 sqlalchemy
 psycopg
 pydantic
+pydantic-settings
 pandas
 rapidfuzz
-google-genai
+google-generativeai
 python-dotenv
 python-multipart

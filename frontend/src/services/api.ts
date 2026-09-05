@@ -1,6 +1,7 @@
 // ============================================================
 // LedgerLens AI — API Service Layer
-// Mock implementation — replace functions with real API calls
+// Real API implementation — calls FastAPI backend
+// Backend: http://localhost:8000
 // ============================================================
 
 import type {
@@ -15,18 +16,10 @@ import type {
   PaginationState,
 } from '../types';
 
-import {
-  mockDashboardMetrics,
-  mockReconciliationCases,
-  mockExceptions,
-  mockAuditLogs,
-  mockSettings,
-} from '../data/mockData';
+// ─── Base Config ─────────────────────────────────────────────
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-// ─── Utility ────────────────────────────────────────────────
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// ─── Response Wrapper ───────────────────────────────────────
+// ─── Response Wrapper ────────────────────────────────────────
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
@@ -34,264 +27,289 @@ export interface ApiResponse<T> {
   pagination?: PaginationState;
 }
 
-// ─── Dashboard ──────────────────────────────────────────────
-/**
- * GET /api/v1/dashboard/metrics
- * Returns key performance indicators and overview data.
- */
-export async function getDashboardMetrics(): Promise<ApiResponse<DashboardMetrics>> {
-  await delay(400);
-  return {
-    data: mockDashboardMetrics,
-    success: true,
-  };
+// ─── Internal fetch helper ───────────────────────────────────
+async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<ApiResponse<T>> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { data: null as T, success: false, message: err.detail ?? `HTTP ${res.status}` };
+    }
+    const json = await res.json();
+    // The backend wraps data in { data, success, pagination } already
+    if ('success' in json) return json as ApiResponse<T>;
+    // Or it just returns the raw object (metrics, audit)
+    return { data: json as T, success: true };
+  } catch (err) {
+    return { data: null as T, success: false, message: String(err) };
+  }
 }
 
-// ─── Reconciliation ─────────────────────────────────────────
+// ─── Dashboard ───────────────────────────────────────────────
 /**
- * GET /api/v1/reconciliation/cases
- * Returns paginated list of reconciliation cases with optional filters.
+ * GET /dashboard/metrics
+ */
+export async function getDashboardMetrics(): Promise<ApiResponse<DashboardMetrics>> {
+  return apiFetch<DashboardMetrics>('/dashboard/metrics');
+}
+
+// ─── Reconciliation Cases ────────────────────────────────────
+/**
+ * GET /dashboard/cases
  */
 export async function getReconciliationCases(
   filters?: Partial<FilterState>,
   pagination?: Partial<PaginationState>
 ): Promise<ApiResponse<ReconciliationCase[]>> {
-  await delay(350);
-
-  let cases = [...mockReconciliationCases];
-
-  // Apply filters
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    cases = cases.filter(
-      c =>
-        c.id.toLowerCase().includes(q) ||
-        c.invoiceNumber.toLowerCase().includes(q) ||
-        c.vendorName.toLowerCase().includes(q) ||
-        (c.poNumber?.toLowerCase().includes(q) ?? false)
-    );
-  }
-
-  if (filters?.status) {
-    cases = cases.filter(c => c.status === filters.status);
-  }
-
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 10;
-  const total = cases.length;
-  const start = (page - 1) * pageSize;
-  const paginatedCases = cases.slice(start, start + pageSize);
-
-  return {
-    data: paginatedCases,
-    success: true,
-    pagination: { page, pageSize, total },
-  };
+  const params = new URLSearchParams();
+  if (filters?.search)  params.set('search', filters.search);
+  if (filters?.status)  params.set('status', filters.status);
+  if (pagination?.page)     params.set('page', String(pagination.page));
+  if (pagination?.pageSize) params.set('pageSize', String(pagination.pageSize));
+  const qs = params.toString();
+  return apiFetch<ReconciliationCase[]>(`/dashboard/cases${qs ? '?' + qs : ''}`);
 }
 
 /**
- * GET /api/v1/reconciliation/cases/:caseId
- * Returns full detail for a single case including investigation, evidence, and audit trail.
+ * GET /dashboard/cases/:caseId
  */
 export async function getInvestigation(caseId: string): Promise<ApiResponse<ReconciliationCase>> {
-  await delay(300);
-  const found = mockReconciliationCases.find(c => c.id === caseId);
-  if (!found) {
-    return { data: {} as ReconciliationCase, success: false, message: 'Case not found' };
-  }
-  return { data: found, success: true };
+  return apiFetch<ReconciliationCase>(`/dashboard/cases/${caseId}`);
 }
 
 /**
- * PATCH /api/v1/reconciliation/cases/:caseId/status
- * Updates the status of a reconciliation case (approve/reject).
+ * PATCH /dashboard/cases/:caseId/status
  */
 export async function updateCaseStatus(
   caseId: string,
   newStatus: ReconciliationStatus,
-  _actor: string = 'Finance Controller'
+  actor: string = 'Finance Controller',
+  reason: string = ''
 ): Promise<ApiResponse<{ caseId: string; status: ReconciliationStatus; auditLog: AuditLog }>> {
-  await delay(500);
-
-  // In real API: PATCH /api/v1/reconciliation/cases/:caseId/status
-  // Body: { status: newStatus, actor: _actor, reason: ... }
-
-  const auditEntry: AuditLog = {
-    id: `al-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    caseId,
-    stage: 'Review',
-    action: newStatus === 'MATCHED' ? 'Match approved' : 'Match rejected',
-    actor: 'Finance Controller',
-    result: newStatus,
-  };
-
-  return {
-    data: { caseId, status: newStatus, auditLog: auditEntry },
-    success: true,
-    message: newStatus === 'MATCHED' ? 'Case approved successfully' : 'Case rejected',
-  };
+  return apiFetch(`/dashboard/cases/${caseId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus, actor, reason }),
+  });
 }
 
-// ─── Exceptions ─────────────────────────────────────────────
+// ─── Exceptions ──────────────────────────────────────────────
 /**
- * GET /api/v1/exceptions
- * Returns exception records with optional filters.
+ * GET /dashboard/exceptions
  */
 export async function getExceptions(
   filters?: Partial<FilterState>
 ): Promise<ApiResponse<Exception[]>> {
-  await delay(300);
-
-  let exceptions = [...mockExceptions];
-
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    exceptions = exceptions.filter(
-      e => e.caseId.toLowerCase().includes(q) || e.vendorName.toLowerCase().includes(q)
-    );
-  }
-
-  if (filters?.severity) {
-    exceptions = exceptions.filter(e => e.severity === filters.severity);
-  }
-
-  if (filters?.exceptionType) {
-    exceptions = exceptions.filter(e => e.type === filters.exceptionType);
-  }
-
-  if (filters?.status) {
-    exceptions = exceptions.filter(e => e.status === filters.status);
-  }
-
-  return {
-    data: exceptions,
-    success: true,
-    pagination: { page: 1, pageSize: 50, total: exceptions.length },
-  };
+  const params = new URLSearchParams();
+  if (filters?.search)        params.set('search', filters.search);
+  if (filters?.severity)      params.set('severity', filters.severity);
+  if (filters?.exceptionType) params.set('exceptionType', filters.exceptionType);
+  if (filters?.status)        params.set('status', filters.status);
+  const qs = params.toString();
+  return apiFetch<Exception[]>(`/dashboard/exceptions${qs ? '?' + qs : ''}`);
 }
 
-// ─── Audit Trail ────────────────────────────────────────────
+// ─── Audit Trail ─────────────────────────────────────────────
 /**
- * GET /api/v1/audit
- * Returns paginated audit log entries.
+ * GET /dashboard/audit
  */
 export async function getAuditLogs(
   filters?: Partial<FilterState>,
   pagination?: Partial<PaginationState>
 ): Promise<ApiResponse<AuditLog[]>> {
-  await delay(300);
-
-  let logs = [...mockAuditLogs];
-
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    logs = logs.filter(
-      l =>
-        l.caseId.toLowerCase().includes(q) ||
-        l.action.toLowerCase().includes(q) ||
-        l.stage.toLowerCase().includes(q)
-    );
-  }
-
-  if (filters?.stage) {
-    logs = logs.filter(l => l.stage === filters.stage);
-  }
-
-  if (filters?.actor) {
-    logs = logs.filter(l => l.actor === filters.actor);
-  }
-
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 20;
-  const total = logs.length;
-
-  return {
-    data: logs.slice((page - 1) * pageSize, page * pageSize),
-    success: true,
-    pagination: { page, pageSize, total },
-  };
+  const params = new URLSearchParams();
+  if (filters?.search) params.set('search', filters.search);
+  if (filters?.stage)  params.set('stage', filters.stage);
+  if (filters?.actor)  params.set('actor', filters.actor);
+  if (pagination?.page)     params.set('page', String(pagination.page));
+  if (pagination?.pageSize) params.set('pageSize', String(pagination.pageSize));
+  const qs = params.toString();
+  return apiFetch<AuditLog[]>(`/dashboard/audit${qs ? '?' + qs : ''}`);
 }
 
-// ─── Upload ─────────────────────────────────────────────────
+// ─── Upload ──────────────────────────────────────────────────
+const CATEGORY_ROUTE: Record<UploadedFile['category'], string> = {
+  PURCHASE_ORDER: 'purchase-orders',
+  INVOICE:        'invoices',
+  PAYMENT:        'payments',
+  RECEIPT:        'receipts',
+};
+
 /**
- * POST /api/v1/upload
- * Handles file upload, parsing, normalization, and validation.
- * In real API: multipart/form-data upload.
+ * POST /upload/{category}
+ * Streams progress updates via onProgress callback.
  */
 export async function uploadRecords(
   file: File,
   category: UploadedFile['category'],
   onProgress: (status: UploadedFile['status'], progress: number) => void
 ): Promise<ApiResponse<UploadedFile>> {
-  // Simulate multi-stage upload pipeline
   onProgress('UPLOADING', 20);
-  await delay(600);
+
+  const form = new FormData();
+  // The backend expects the file under a specific field name per category
+  const fieldNames: Record<UploadedFile['category'], string> = {
+    PURCHASE_ORDER: 'file',
+    INVOICE:        'file',
+    PAYMENT:        'file',
+    RECEIPT:        'file',
+  };
+  form.append(fieldNames[category], file);
 
   onProgress('PARSING', 45);
-  await delay(700);
 
-  onProgress('NORMALIZING', 65);
-  await delay(500);
+  try {
+    const routeSegment = CATEGORY_ROUTE[category];
+    const res = await fetch(`${API_BASE}/upload/${routeSegment}`, {
+      method: 'POST',
+      body: form,
+    });
 
-  onProgress('VALIDATING', 85);
-  await delay(400);
+    onProgress('NORMALIZING', 65);
 
-  onProgress('READY', 100);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      onProgress('ERROR' as UploadedFile['status'], 0);
+      return { data: null as any, success: false, message: err.detail ?? `Upload failed: HTTP ${res.status}` };
+    }
 
-  const uploadedFile: UploadedFile = {
-    id: `file-${Date.now()}`,
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    category,
-    status: 'READY',
-    progress: 100,
-    recordCount: 150,
-    validRecords: 148,
-    warningRecords: 2,
-    errorRecords: 0,
-    uploadedAt: new Date().toISOString(),
-    warnings: [
-      'Row 43: vendor_gstin field missing',
-      'Row 91: invoice_date format inconsistency (auto-corrected)',
-    ],
-  };
+    const json = await res.json();
+    onProgress('VALIDATING', 85);
+    onProgress('READY', 100);
 
-  return { data: uploadedFile, success: true, message: 'File processed successfully' };
+    const uploadedFile: UploadedFile = {
+      id:             `file-${Date.now()}`,
+      name:           file.name,
+      size:           file.size,
+      type:           file.type,
+      category,
+      status:         'READY',
+      progress:       100,
+      recordCount:    json.total_records ?? 0,
+      validRecords:   json.total_records ?? 0,
+      warningRecords: json.warning_count ?? 0,
+      errorRecords:   json.error_count   ?? 0,
+      uploadedAt:     new Date().toISOString(),
+      warnings:       json.warnings ?? [],
+    };
+
+    return { data: uploadedFile, success: true, message: 'File processed successfully' };
+  } catch (err) {
+    onProgress('ERROR' as UploadedFile['status'], 0);
+    return { data: null as any, success: false, message: String(err) };
+  }
 }
 
+// ─── Reconciliation Run ──────────────────────────────────────
 /**
- * POST /api/v1/reconciliation/run
- * Triggers the reconciliation pipeline on uploaded records.
+ * POST /reconcile/investigate  — full 10-stage pipeline
+ *
+ * Accepts all 4 CSV files at once. Returns the full result immediately
+ * (no polling needed — pipeline is synchronous on the backend).
  */
-export async function runReconciliation(): Promise<ApiResponse<{ jobId: string; message: string }>> {
-  await delay(800);
-  return {
-    data: {
-      jobId: `job-${Date.now()}`,
-      message: 'Reconciliation started. Results will appear momentarily.',
-    },
-    success: true,
-  };
+export async function runReconciliation(
+  files?: {
+    purchaseOrders: File;
+    invoices:       File;
+    payments:       File;
+    receipts:       File;
+  }
+): Promise<ApiResponse<{ jobId: string; message: string; cases?: any[]; summary?: any }>> {
+  if (!files) {
+    // Fallback: just trigger without files (no-op in the real backend)
+    return { data: { jobId: `job-${Date.now()}`, message: 'No files provided.' }, success: false };
+  }
+
+  const form = new FormData();
+  form.append('purchase_orders_file', files.purchaseOrders);
+  form.append('invoices_file',        files.invoices);
+  form.append('payments_file',        files.payments);
+  form.append('receipts_file',        files.receipts);
+
+  try {
+    const res = await fetch(`${API_BASE}/reconcile/investigate`, {
+      method: 'POST',
+      body:   form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { data: { jobId: '', message: err.detail ?? `HTTP ${res.status}` }, success: false };
+    }
+    const json = await res.json();
+    return {
+      data: {
+        jobId:   json.run_id ?? `job-${Date.now()}`,
+        message: 'Reconciliation complete.',
+        cases:   json.cases,
+        summary: json.summary,
+      },
+      success: true,
+    };
+  } catch (err) {
+    return { data: { jobId: '', message: String(err) }, success: false, message: String(err) };
+  }
 }
 
 // ─── Settings ────────────────────────────────────────────────
-/**
- * GET /api/v1/settings
- */
+
+// Default settings (no DB yet — serve locally)
+const DEFAULT_SETTINGS: SettingsConfig = {
+  organization: {
+    name: 'Acme Technologies Pvt Ltd',
+    gstin: '29AABCT1332L1ZV',
+    financialYear: '2026-27',
+    currency: 'INR',
+    timezone: 'Asia/Kolkata',
+  },
+  reconciliation: {
+    automaticMatchThreshold: 90,
+    aiInvestigationThreshold: 50,
+    amountTolerance: 2,
+    vendorSimilarityThreshold: 80,
+    enableFuzzyMatching: true,
+    enableGSTValidation: false,
+  },
+  confidence: {
+    highConfidenceThreshold: 90,
+    mediumConfidenceThreshold: 50,
+    lowConfidenceThreshold: 30,
+  },
+  dataSources: {
+    razorpayx:      false,
+    bankStatement:  true,
+    erpIntegration: false,
+    gstr2b:         false,
+  },
+  ai: {
+    model:                  'gemini-2.5-flash',
+    maxInvestigationDepth:  5,
+    enableExplainability:   true,
+    enableGuardrails:       true,
+    humanReviewRequired:    true,
+  },
+  notifications: {
+    emailAlerts:       false,
+    slackIntegration:  false,
+    webhookUrl:        '',
+    alertOnException:  true,
+    dailyDigest:       false,
+  },
+};
+
+let _settings = { ...DEFAULT_SETTINGS };
+
 export async function getSettings(): Promise<ApiResponse<SettingsConfig>> {
-  await delay(200);
-  return { data: mockSettings, success: true };
+  return { data: _settings, success: true };
 }
 
-/**
- * PUT /api/v1/settings
- */
 export async function updateSettings(
   settings: Partial<SettingsConfig>
 ): Promise<ApiResponse<SettingsConfig>> {
-  await delay(400);
-  const updated = { ...mockSettings, ...settings };
-  return { data: updated, success: true, message: 'Settings saved successfully' };
+  _settings = { ..._settings, ...settings };
+  return { data: _settings, success: true, message: 'Settings saved successfully' };
 }

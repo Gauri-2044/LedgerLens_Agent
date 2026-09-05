@@ -75,8 +75,12 @@ export type ExceptionType =
   | 'VENDOR_MISMATCH'
   | 'MISSING_PAYMENT'
   | 'DUPLICATE_INVOICE'
+  | 'DUPLICATE_LINK'
   | 'MISSING_PO'
-  | 'MULTIPLE_CANDIDATES';
+  | 'MISSING_RECEIPT'
+  | 'DATE_GAP'
+  | 'MULTIPLE_CANDIDATES'
+  | 'INSUFFICIENT_EVIDENCE';
 
 export type ExceptionSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -141,6 +145,7 @@ export interface ReconciliationCase {
   paymentAmount?: number;
   matchScore?: number;
   status: ReconciliationStatus;
+  aiAssisted?: boolean;       // true = AI upgraded this from AMBIGUOUS to MATCHED
   exceptionType?: ExceptionType;
   lastUpdated: string;
   source?: string;
